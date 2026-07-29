@@ -13,75 +13,69 @@ jobs:
   deploy-rdp:
     runs-on: windows-latest
     timeout-minutes: 360
-    
+
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
-      
-    - name: System Information
-      run: |
-        Write-Host "=== ENIGMANO RDP DEPLOYMENT (TAILSCALE) ===" -ForegroundColor Green
-        Write-Host "Instance Number: ${{ github.event.inputs.instance_number }}" -ForegroundColor Yellow
-        Write-Host "Runner: $env:RUNNER_NAME" -ForegroundColor Yellow
-        Write-Host "Workflow: $env:GITHUB_WORKFLOW" -ForegroundColor Yellow
-        
-        Write-Host "`n=== SYSTEM SPECIFICATIONS ===" -ForegroundColor Cyan
-        Get-ComputerInfo | Select-Object WindowsProductName, WindowsVersion, TotalPhysicalMemory
-        Get-WmiObject -Class Win32_Processor | Select-Object Name, NumberOfCores, NumberOfLogicalProcessors
-        
-    - name: Enable RDP
-      run: |
-        Write-Host "Enabling Remote Desktop..." -ForegroundColor Green
-        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -Value 0
-        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
-        
-    - name: Create User Account
-      run: |
-        Write-Host "Setting up user account..." -ForegroundColor Green
-        $Password = ConvertTo-SecureString "P@ssw0rd!" -AsPlainText -Force
-        Set-LocalUser -Name "runneradmin" -Password $Password
-        Add-LocalGroupMember -Group "Remote Desktop Users" -Member "runneradmin"
-        Write-Host "Username: runneradmin" -ForegroundColor Yellow
-        Write-Host "Password: P@ssw0rd!" -ForegroundColor Yellow
-        
-    - name: Install Tailscale
-      run: |
-        Write-Host "Downloading Tailscale..." -ForegroundColor Green
-        Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe" -OutFile "tailscale.exe"
-        Write-Host "Installing Tailscale..." -ForegroundColor Green
-        Start-Process -FilePath ".\tailscale.exe" -ArgumentList "/quiet" -Wait
-        
-    - name: Connect Tailscale
-      run: |
-        Write-Host "Connecting to Tailscale network..." -ForegroundColor Green
-        & "$env:ProgramFiles\Tailscale\tailscale.exe" up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=enigmano-${{ github.run_id }}
-        
-    - name: Install Essential Software
-      run: |
-        Write-Host "Installing essential software..." -ForegroundColor Green
-        
-        # Install Chocolatey
-        Set-ExecutionPolicy Bypass -Scope Process -Force
-        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-        iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-        
-        # Install Chrome
-        choco install googlechrome -y
-        
-        # Install 7-Zip
-        choco install 7zip -y
-        
-        # Install Notepad++
-        choco install notepadplusplus -y
-        
-        Write-Host "Software installation completed!" -ForegroundColor Green
-        
-    - name: Configure Chrome Extensions
-      run: |
-        Write-Host "Configuring Chrome with security extensions..." -ForegroundColor Green
-        
-        $ChromePrefs = @"
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: System Information
+        run: |
+          Write-Host "=== ENIGMANO RDP DEPLOYMENT (TAILSCALE) ===" -ForegroundColor Green
+          Write-Host "Instance Number: ${{ github.event.inputs.instance_number }}" -ForegroundColor Yellow
+          Write-Host "Runner: $env:RUNNER_NAME" -ForegroundColor Yellow
+          Write-Host "Workflow: $env:GITHUB_WORKFLOW" -ForegroundColor Yellow
+
+          Write-Host "`n=== SYSTEM SPECIFICATIONS ===" -ForegroundColor Cyan
+          Get-ComputerInfo | Select-Object WindowsProductName, WindowsVersion, TotalPhysicalMemory
+          Get-WmiObject -Class Win32_Processor | Select-Object Name, NumberOfCores, NumberOfLogicalProcessors
+
+      - name: Enable RDP
+        run: |
+          Write-Host "Enabling Remote Desktop..." -ForegroundColor Green
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -Value 0
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
+
+      - name: Create User Account
+        run: |
+          Write-Host "Setting up user account..." -ForegroundColor Green
+          $Password = ConvertTo-SecureString "P@ssw0rd!" -AsPlainText -Force
+          Set-LocalUser -Name "runneradmin" -Password $Password
+          Add-LocalGroupMember -Group "Remote Desktop Users" -Member "runneradmin"
+          Write-Host "Username: runneradmin" -ForegroundColor Yellow
+          Write-Host "Password: P@ssw0rd!" -ForegroundColor Yellow
+
+      - name: Install Tailscale
+        run: |
+          Write-Host "Downloading Tailscale..." -ForegroundColor Green
+          Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe" -OutFile "tailscale.exe"
+          Write-Host "Installing Tailscale..." -ForegroundColor Green
+          Start-Process -FilePath ".\tailscale.exe" -ArgumentList "/quiet" -Wait
+
+      - name: Connect Tailscale
+        run: |
+          Write-Host "Connecting to Tailscale network..." -ForegroundColor Green
+          & "$env:ProgramFiles\Tailscale\tailscale.exe" up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=enigmano-${{ github.run_id }}
+
+      - name: Install Essential Software
+        run: |
+          Write-Host "Installing essential software..." -ForegroundColor Green
+
+          Set-ExecutionPolicy Bypass -Scope Process -Force
+          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+          iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+          choco install googlechrome -y
+          choco install 7zip -y
+          choco install notepadplusplus -y
+
+          Write-Host "Software installation completed!" -ForegroundColor Green
+
+      - name: Configure Chrome Extensions
+        run: |
+          Write-Host "Configuring Chrome with security extensions..." -ForegroundColor Green
+
+          $ChromePrefs = @"
 {
   "extensions": {
     "settings": {
@@ -101,60 +95,59 @@ jobs:
   }
 }
 "@
-        
-        $ChromeDir = "$env:LOCALAPPDATA\Google\Chrome\User Data\Default"
-        if (!(Test-Path $ChromeDir)) {
-          New-Item -ItemType Directory -Path $ChromeDir -Force
-        }
-        
-        $ChromePrefs | Out-File -FilePath "$ChromeDir\Preferences" -Encoding UTF8
-        
-    - name: Get Connection Details
-      run: |
-        $ip = & "$env:ProgramFiles\Tailscale\tailscale.exe" ip -4
-        
-        Write-Host "`n=== CONNECTION DETAILS ===" -ForegroundColor Green
-        Write-Host "╔══════════════════════════════════════╗" -ForegroundColor Cyan
-        Write-Host "║     ENIGMANO RDP (TAILSCALE)        ║" -ForegroundColor Cyan  
-        Write-Host "╠══════════════════════════════════════╣" -ForegroundColor Cyan
-        Write-Host "║ Tailscale IP: $ip" -ForegroundColor White
-        Write-Host "║ Username: runneradmin                ║" -ForegroundColor White
-        Write-Host "║ Password: P@ssw0rd!                  ║" -ForegroundColor White
-        Write-Host "╚══════════════════════════════════════╝" -ForegroundColor Cyan
-        
-        Write-Host "`nConnection Instructions:" -ForegroundColor Yellow
-        Write-Host "1. Open Tailscale on your device" -ForegroundColor White
-        Write-Host "2. Find device named: enigmano-${{ github.run_id }}" -ForegroundColor White
-        Write-Host "3. Use the Tailscale IP above" -ForegroundColor White
-        Write-Host "4. Open Remote Desktop Connection" -ForegroundColor White
-        Write-Host "5. Enter IP, username, and password" -ForegroundColor White
-        Write-Host "6. IMPORTANT: Minimize (don't close) this window to keep connection alive!" -ForegroundColor Red
-        
-    - name: Keep Session Alive
-      run: |
-        Write-Host "`n=== SESSION ACTIVE ===" -ForegroundColor Green
-        Write-Host "EnigMano RDP instance is now running!" -ForegroundColor Cyan
-        Write-Host "Instance will remain active for up to 6 hours." -ForegroundColor Yellow
-        Write-Host "Do not close this window to maintain the connection." -ForegroundColor Red
-        
-        $counter = 0
-        while ($true) {
-          $counter++
-          Write-Host "Session active - Heartbeat #$counter ($(Get-Date))" -ForegroundColor Green
-          
-          # Check if Tailscale is still connected
-          try {
-            $tsStatus = & "$env:ProgramFiles\Tailscale\tailscale.exe" status
-            if ($LASTEXITCODE -eq 0) {
-              Write-Host "Tailscale status: CONNECTED" -ForegroundColor Green
-            } else {
-              Write-Host "Tailscale status: DISCONNECTED - Reconnecting..." -ForegroundColor Yellow
+
+          $ChromeDir = "$env:LOCALAPPDATA\Google\Chrome\User Data\Default"
+          if (!(Test-Path $ChromeDir)) {
+            New-Item -ItemType Directory -Path $ChromeDir -Force
+          }
+
+          $ChromePrefs | Out-File -FilePath "$ChromeDir\Preferences" -Encoding UTF8
+
+      - name: Get Connection Details
+        run: |
+          $ip = & "$env:ProgramFiles\Tailscale\tailscale.exe" ip -4
+
+          Write-Host "`n=== CONNECTION DETAILS ===" -ForegroundColor Green
+          Write-Host "╔══════════════════════════════════════╗" -ForegroundColor Cyan
+          Write-Host "║     ENIGMANO RDP (TAILSCALE)        ║" -ForegroundColor Cyan
+          Write-Host "╠══════════════════════════════════════╣" -ForegroundColor Cyan
+          Write-Host "║ Tailscale IP: $ip" -ForegroundColor White
+          Write-Host "║ Username: runneradmin                ║" -ForegroundColor White
+          Write-Host "║ Password: P@ssw0rd!                  ║" -ForegroundColor White
+          Write-Host "╚══════════════════════════════════════╝" -ForegroundColor Cyan
+
+          Write-Host "`nConnection Instructions:" -ForegroundColor Yellow
+          Write-Host "1. Open Tailscale on your device" -ForegroundColor White
+          Write-Host "2. Find device named: enigmano-${{ github.run_id }}" -ForegroundColor White
+          Write-Host "3. Use the Tailscale IP above" -ForegroundColor White
+          Write-Host "4. Open Remote Desktop Connection" -ForegroundColor White
+          Write-Host "5. Enter IP, username, and password" -ForegroundColor White
+          Write-Host "6. IMPORTANT: Minimize (don't close) this window to keep connection alive!" -ForegroundColor Red
+
+      - name: Keep Session Alive
+        run: |
+          Write-Host "`n=== SESSION ACTIVE ===" -ForegroundColor Green
+          Write-Host "EnigMano RDP instance is now running!" -ForegroundColor Cyan
+          Write-Host "Instance will remain active for up to 6 hours." -ForegroundColor Yellow
+          Write-Host "Do not close this window to maintain the connection." -ForegroundColor Red
+
+          $counter = 0
+          while ($true) {
+            $counter++
+            Write-Host "Session active - Heartbeat #$counter ($(Get-Date))" -ForegroundColor Green
+
+            try {
+              $tsStatus = & "$env:ProgramFiles\Tailscale\tailscale.exe" status
+              if ($LASTEXITCODE -eq 0) {
+                Write-Host "Tailscale status: CONNECTED" -ForegroundColor Green
+              } else {
+                Write-Host "Tailscale status: DISCONNECTED - Reconnecting..." -ForegroundColor Yellow
+                & "$env:ProgramFiles\Tailscale\tailscale.exe" up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=enigmano-${{ github.run_id }}
+              }
+            } catch {
+              Write-Host "Tailscale status: ERROR - Attempting reconnect..." -ForegroundColor Red
               & "$env:ProgramFiles\Tailscale\tailscale.exe" up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=enigmano-${{ github.run_id }}
             }
-          } catch {
-            Write-Host "Tailscale status: ERROR - Attempting reconnect..." -ForegroundColor Red
-            & "$env:ProgramFiles\Tailscale\tailscale.exe" up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=enigmano-${{ github.run_id }}
+
+            Start-Sleep -Seconds 60
           }
-          
-          Start-Sleep -Seconds 60
-        }
